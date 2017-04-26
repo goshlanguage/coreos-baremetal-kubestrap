@@ -1,0 +1,3 @@
+certs/
+ansible/k8s_on_coreos.retry
+ansible/roles/common/files/etc/kubernetes/ssl/*pem

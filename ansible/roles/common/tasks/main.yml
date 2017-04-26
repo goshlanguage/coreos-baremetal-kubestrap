@@ -1,0 +1,93 @@
+- name: Ensure kubernetes ssl directory exists
+  file:
+    path: /etc/kubernetes/ssl
+    state: directory
+    mode: 0750
+    owner: root
+    group: root
+
+- name: Copy CA files
+  copy:
+    src: etc/kubernetes/ssl/{{ item }}
+    dest: /etc/kubernetes/ssl/{{ item }}
+    mode: 0600
+    owner: root
+    group: root
+  with_items:
+    - ca.pem
+    - ca-key.pem
+
+- name: create required directories
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - /etc/flannel
+    - /etc/systemd/system/flanneld.service.d
+    - /etc/systemd/system/docker.service.d
+    - /etc/systemd/system/etcd2.service.d
+    - /etc/kubernetes/manifests
+    - /etc/kubernetes/cni/net.d
+
+- name: flanneld environment config
+  template:
+    src: etc/flannel/options.env
+    dest: /etc/flannel/options.env
+  notify:
+    - daemon reload
+    - restart flanneld
+
+- name: systemd flanneld service drop-in
+  copy:
+    src: etc/systemd/system/flanneld.service.d/40-ExecStartPre-symlink.conf
+    dest: /etc/systemd/system/flanneld.service.d/40-ExecStartPre-symlink.conf
+  notify:
+    - daemon reload
+    - restart flanneld
+
+- name: systemd flanneld network config drop-in
+  copy:
+    src: etc/systemd/system/flanneld.service.d/50-network-config.conf
+    dest: /etc/systemd/system/flanneld.service.d/50-network-config.conf
+  notify:
+    - daemon reload
+    - restart flanneld
+
+- name: systemd docker flannel service drop-in
+  copy:
+    src: etc/systemd/system/docker.service.d/40-flannel.conf
+    dest: /etc/systemd/system/docker.service.d/40-flannel.conf
+  notify:
+    - daemon reload
+    - restart flanneld
+
+- name: docker cni environment config
+  copy:
+    src: etc/kubernetes/cni/docker_opts_cni.env
+    dest: /etc/kubernetes/cni/docker_opts_cni.env
+
+- name: flannel cni config
+  copy:
+    src: etc/kubernetes/cni/net.d/10-flannel.conf
+    dest: /etc/kubernetes/cni/net.d/10-flannel.conf
+  notify:
+    - daemon reload
+    - restart flanneld
+
+- name: systemd etcd2 service drop-in
+  template:
+    src: etc/systemd/system/etcd2.service.d/20-cloudinit.conf
+    dest: /etc/systemd/system/etcd2.service.d/20-cloudinit.conf
+  notify:
+    - restart etcd2
+
+- name: google resolver
+  lineinfile:
+    path: /etc/resolv.conf
+    line: 'nameserver 8.8.8.8'
+
+- name: calico manifest
+  template:
+    src: etc/kubernetes/manifests/calico.yaml
+    dest: /etc/kubernetes/manifests/calico.yaml
+  notify: restart kubelet

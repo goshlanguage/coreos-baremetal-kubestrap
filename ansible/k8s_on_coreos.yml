@@ -1,0 +1,20 @@
+---
+
+- name: Kubernetes on CoreOS
+  hosts: all
+  # Fact gathering is disabled in the event that the node must be bootstrapped.
+  # This would fail where bootstrap hasn't downloaded a python binary.
+  gather_facts: False
+  user: core
+
+  pre_tasks:
+    - name: Check if bootstrapped
+      raw: stat $HOME/.bootstrapped
+      register: need_bootstrap
+      ignore_errors: True
+
+  roles:
+    - { role: bootstrap, when: need_bootstrap }
+    - { role: common, become: true }
+    - { role: master, when: kube_master, become: true }
+    - { role: workers, when: worker, become: true }

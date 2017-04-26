@@ -1,0 +1,61 @@
+- name: Template openssl config
+  template:
+    src: etc/kubernetes/ssl/openssl.cnf
+    dest: /etc/kubernetes/ssl/openssl.cnf
+
+- name: Check for existing cert
+  stat:
+    path: /etc/kubernetes/ssl/apiserver.pem
+  register: apiserverpem
+
+- name: Generate apiserver key
+  shell: openssl genrsa -out /etc/kubernetes/ssl/apiserver-key.pem 2048
+  when: not apiserverpem.stat.exists
+  notify: restart kubelet
+
+- name: Generate apiserver csr
+  shell: openssl req -new -key /etc/kubernetes/ssl/apiserver-key.pem -out /etc/kubernetes/ssl/apiserver.csr -subj "/CN=kube-apiserver" -config /etc/kubernetes/ssl/openssl.cnf
+  when: not apiserverpem.stat.exists
+  notify: restart kubelet
+
+- name: Generate apiserver cert
+  shell: openssl x509 -req -in /etc/kubernetes/ssl/apiserver.csr -CA /etc/kubernetes/ssl/ca.pem -CAkey /etc/kubernetes/ssl/ca-key.pem -CAcreateserial -out /etc/kubernetes/ssl/apiserver.pem -days 365 -extensions v3_req -extfile /etc/kubernetes/ssl/openssl.cnf
+  when: not apiserverpem.stat.exists
+  notify: restart kubelet
+
+- name: Set apiserver-key perms
+  file:
+    path: /etc/kubernetes/ssl/apiserver-key.pem
+    mode: 0600
+    owner: root
+    group: root
+
+- name: template kubelet service
+  template:
+      src: etc/systemd/system/kubelet.service
+      dest: /etc/systemd/system/kubelet.service
+  notify: restart kubelet
+
+- name: kubelet-apiserver manifest
+  template:
+    src: etc/kubernetes/manifests/kube-apiserver.yaml
+    dest: /etc/kubernetes/manifests/kube-apiserver.yaml
+  notify: start kubelet
+
+- name: kubelet-controller manifest
+  template:
+    src: etc/kubernetes/manifests/kube-controller.yaml
+    dest: /etc/kubernetes/manifests/kube-controller.yaml
+  notify: start kubelet
+
+- name: kubelet-proxy manifest
+  template:
+    src: etc/kubernetes/manifests/kube-proxy.yaml
+    dest: /etc/kubernetes/manifests/kube-proxy.yaml
+  notify: start kubelet
+
+- name: kubelet-scheduler manifest
+  template:
+    src: etc/kubernetes/manifests/kube-scheduler.yaml
+    dest: /etc/kubernetes/manifests/kube-scheduler.yaml
+  notify: start kubelet

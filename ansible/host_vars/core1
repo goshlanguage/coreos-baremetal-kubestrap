@@ -1,0 +1,5 @@
+kube_master: true
+worker: false
+
+MY_IP: 10.0.0.10
+ADVERTISE_IP: 192.168.0.34

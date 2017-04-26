@@ -1,0 +1,45 @@
+- name: Template openssl config
+  template:
+    src: etc/kubernetes/ssl/openssl.cnf
+    dest: /etc/kubernetes/ssl/openssl.cnf
+
+- name: Check for existing cert
+  stat:
+    path: /etc/kubernetes/ssl/worker.pem
+  register: workerpem
+
+- name: Generate worker key
+  shell: openssl genrsa -out /etc/kubernetes/ssl/worker-key.pem 2048
+  when: not workerpem.stat.exists
+
+- name: Generate worker csr
+  shell: openssl req -new -key /etc/kubernetes/ssl/worker-key.pem -out /etc/kubernetes/ssl/worker.csr -subj "/CN=kube-worker" -config /etc/kubernetes/ssl/openssl.cnf
+  when: not workerpem.stat.exists
+
+- name: Generate worker cert
+  shell: openssl x509 -req -in /etc/kubernetes/ssl/worker.csr -CA /etc/kubernetes/ssl/ca.pem -CAkey /etc/kubernetes/ssl/ca-key.pem -CAcreateserial -out /etc/kubernetes/ssl/worker.pem -days 365 -extensions v3_req -extfile /etc/kubernetes/ssl/openssl.cnf
+  when: not workerpem.stat.exists
+
+- name: Set worker-key perms
+  file:
+    path: /etc/kubernetes/ssl/worker-key.pem
+    mode: 0600
+    owner: root
+    group: root
+
+- name: template kubelet.service
+  template:
+    src: etc/systemd/system/kubelet.service
+    dest: /etc/systemd/system/kubelet.service
+  notify: restart kubelet
+
+- name: template kube-proxy
+  template:
+    src: etc/kubernetes/manifests/kube-proxy.yaml
+    dest: /etc/kubernetes/manifests/kube-proxy.yaml
+
+- name: copy worker-kubeconfig
+  copy:
+    src: etc/kubernetes/worker-kubeconfig.yaml
+    dest: /etc/kubernetes/worker-kubeconfig.yaml
+  notify: restart kubelet

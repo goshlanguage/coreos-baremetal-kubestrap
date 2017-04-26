@@ -1,0 +1,18 @@
+kube_master: false
+worker: true
+
+K8S_VERSION: v1.6.1
+
+# https://coreos.com/kubernetes/docs/1.6.1/openssl.html
+MASTER_HOST: 192.168.0.34
+
+# https://coreos.com/kubernetes/docs/1.6.1/getting-started.html
+ETCD_ENDPOINTS: 'http://10.0.0.10:2379,http://10.0.0.110:2379,http://10.0.0.86:2379,http://10.0.0.13:2379,http://10.0.0.199:2379'
+POD_NETWORK: 10.2.0.0/16
+SERVICE_IP_RANGE: 10.3.0.0/24
+K8S_SERVICE_IP: 10.3.0.1
+DNS_SERVICE_IP: 10.3.0.10
+
+NETWORK_PLUGIN: cni
+
+ETCD_DISCOVERY_TOKEN: 91d00d244e97623fb3e7e14997e3a70e

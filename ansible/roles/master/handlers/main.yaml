@@ -1,0 +1,12 @@
+- name: start kubelet
+  systemd:
+    name: kubelet.service
+    state: started
+    daemon_reload: yes
+    enabled: yes
+
+- name: restart kubelet
+  systemd:
+    name: kubelet.service
+    state: restarted
+    daemon_reload: yes
