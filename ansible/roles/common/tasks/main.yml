@@ -37,6 +37,14 @@
     - daemon reload
     - restart flanneld
 
+- name: systemd flannel cni environment config drop-in
+  file:
+    path: /etc/systemd/system/flanneld.service.d/20-cni.conf
+    state: absent
+  notify:
+    - daemon reload
+    - restart flanneld
+
 - name: systemd flanneld service drop-in
   copy:
     src: etc/systemd/system/flanneld.service.d/40-ExecStartPre-symlink.conf
@@ -65,6 +73,8 @@
   copy:
     src: etc/kubernetes/cni/docker_opts_cni.env
     dest: /etc/kubernetes/cni/docker_opts_cni.env
+  notify:
+    - restart flanneld
 
 - name: flannel cni config
   copy:
@@ -86,8 +96,16 @@
     path: /etc/resolv.conf
     line: 'nameserver 8.8.8.8'
 
+- name: calico-node service
+  file:
+    path: /etc/systemd/system/calico-node.service
+    state: absent
+  notify:
+    - daemon reload
+    - restart calico
+
 - name: calico manifest
-  template:
-    src: etc/kubernetes/manifests/calico.yaml
-    dest: /etc/kubernetes/manifests/calico.yaml
+  file:
+    path: /etc/kubernetes/manifests/calico.yaml
+    state: absent
   notify: restart kubelet

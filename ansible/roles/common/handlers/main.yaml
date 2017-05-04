@@ -25,3 +25,10 @@
     daemon_reload: yes
     name: etcd2
     state: restarted
+
+- name: restart calico
+  systemd:
+    daemon_reload: yes
+    enabled: yes
+    name: calico-node
+    state: restarted
