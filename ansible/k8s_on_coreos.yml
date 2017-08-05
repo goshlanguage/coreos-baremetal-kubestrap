@@ -15,6 +15,6 @@
 
   roles:
     - { role: bootstrap, when: need_bootstrap }
-    - { role: common, become: true }
-    - { role: master, when: kube_master, become: true }
-    - { role: workers, when: worker, become: true }
+    # - { role: common, become: true }
+    # - { role: master, when: kube_master, become: true }
+    # - { role: workers, when: worker, become: true }

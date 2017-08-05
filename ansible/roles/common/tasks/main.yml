@@ -54,7 +54,7 @@
     - restart flanneld
 
 - name: systemd flanneld network config drop-in
-  copy:
+  template:
     src: etc/systemd/system/flanneld.service.d/50-network-config.conf
     dest: /etc/systemd/system/flanneld.service.d/50-network-config.conf
   notify:
